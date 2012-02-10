@@ -1,0 +1,29 @@
+
+Request:
+	flags
+	Path
+	Method
+	Protocol
+	Headers
+		Key Value
+	Body
+
+Response:
+	flags
+	Code, Code string
+	Params:
+		key value
+	Headers:
+		Key Value
+	Body
+
+
+Message format:
+	pstr: uint64_t len, char* string
+	
+	key_value:
+		uint64_t len
+		pstr[]
+	
+
+

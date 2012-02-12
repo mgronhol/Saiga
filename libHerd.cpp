@@ -38,10 +38,37 @@ int queue_get(){
 	}
 
 
+CachedEntry :: CachedEntry(){
+	expires = std::numeric_limits<double>::infinity();
+	}
 
+CachedEntry :: CachedEntry( HttpMessage payload, double ttl ){
+	expires = get_time() + ttl;
+	content = payload;
+	}
+
+bool CachedEntry :: is_valid(){
+	return expires > get_time();
+	}
+
+HttpMessage CachedEntry :: get_content(){ return content; } 
+
+
+std::map< std::string, handler_function > RequestHandler :: handlers;
+std::unordered_map< uint64_t, CachedEntry > RequestHandler :: cache;
 
 
 bool RequestHandler :: running = true;
+
+void RequestHandler :: add_handler( std::string pattern, handler_function func ){
+	handlers[ pattern ] = func;
+	}
+
+void RequestHandler :: add_cache( std::string path, HttpMessage msg, double expires ){
+	uint64_t key = fnv1a_hash( path );
+	cache[ key ] = CachedEntry( msg, expires );
+	}
+		
 
 void* RequestHandler :: workerThread( void *arg ){
 	
@@ -220,43 +247,79 @@ void RequestHandler :: handleClient( int fd ){
 
 HttpMessage RequestHandler :: handleRequest( HttpMessage& request ){
 	HttpMessage response;
-	std::string body;
+	std::string body, path;
+	handler_function func = NULL;
+	size_t pattern_length = 0;
+	uint64_t cache_key;
+	std::unordered_map<uint64_t, CachedEntry>::iterator cache_it;
 	
-	response.set_code( 200 );
-	response.set_code_string( "Ok." );
+	path = request.get_path();
 	response.set_version( "HTTP/1.1" );
-	response.set_header_field( "Connection", "close" );
-	response.set_header_field( "Date", get_gmt_time(0) );
 	response.set_header_field( "Server", "Saiga Node 0.0.2" );
-	response.set_header_field( "Last-Modified", get_gmt_time(0) );
 	response.set_header_field( "Content-Type", "text/html" );
 	
-	if( request.get_method() == "GET" ){
-		for( size_t i = 0 ; i < 10 ; ++i ){
-			body += "Hola, mundi!\r\n";
+	cache_key = fnv1a_hash( path );
+	cache_it = cache.find( cache_key );
+	if( cache_it != cache.end() ){
+		if( (cache_it->second).is_valid() ){
+			return (cache_it->second).get_content();
 			}
 		}
-	if( request.get_method() == "PUT" ){
-		body += "Interesting, a PUT request :D\r\n";
-		body += "Size of received file was " + integer_to_string( request.get_body().size() ) + " bytes...\r\n";
-		body += "Path you gave was: '" + request.get_path() + "'\r\n";
-		}
 	
-	if( request.has_header_field( "Accept-Encoding" ) ){
-		if( request.get_header_field( "Accept-Encoding" ).find( "gzip" ) != std::string::npos ){
-			body = zlib_gzip_deflate( body );
-			response.set_header_field( "Content-Encoding", "gzip" );
-			} 
-		else{
-			if( request.get_header_field( "Accept-Encoding" ).find( "deflate" ) != std::string::npos ){
-				body = zlib_deflate( body );
-				response.set_header_field( "Content-Encoding", "deflate" );
+					
+	for( std::map< std::string, handler_function >::iterator it = handlers.begin() ; it != handlers.end() ; it++ ){
+		if( string_startswith( it->first, path ) ){
+			if( (it->first).size() > pattern_length ){
+				pattern_length = (it->first).size();
+				func = it->second;
 				}
 			}
 		}
 	
-	
-	response.set_body( body );
+	if( func == NULL ){
+		response.set_code( 404 );
+		response.set_code_string( "Not found." );
+		response.set_version( "HTTP/1.1" );
+		response.set_header_field( "Connection", "close" );
+		response.set_header_field( "Date", get_gmt_time(0) );
+		response.set_header_field( "Server", "Saiga Node 0.0.2" );
+		response.set_header_field( "Last-Modified", get_gmt_time(0) );
+		response.set_header_field( "Content-Type", "text/plain" );
+		response.set_body( "Error 404 - Not found!\n" );
+		}
+	else{
+		response_options_t result = func( request, response );
+		if( !result.ok ){
+			response.set_code( 404 );
+			response.set_code_string( "Not found." );
+			response.set_version( "HTTP/1.1" );
+			response.set_header_field( "Connection", "close" );
+			response.set_header_field( "Date", get_gmt_time(0) );
+			response.set_header_field( "Server", "Saiga Node 0.0.2" );
+			response.set_header_field( "Last-Modified", get_gmt_time(0) );
+			response.set_header_field( "Content-Type", "text/plain" );
+			response.set_body( "Error 404 - Not found!\n" );
+			}
+		else{
+			if( request.has_header_field( "Accept-Encoding" ) ){
+				if( request.get_header_field( "Accept-Encoding" ).find( "gzip" ) != std::string::npos ){
+					response.set_body( zlib_gzip_deflate( response.get_body() ) );
+					response.set_header_field( "Content-Encoding", "gzip" );
+					} 
+				else{
+					if( request.get_header_field( "Accept-Encoding" ).find( "deflate" ) != std::string::npos ){
+						response.set_body( zlib_deflate( response.get_body() ) );
+						response.set_header_field( "Content-Encoding", "deflate" );
+						}
+					}
+				}
+			
+			if( result.cached ){
+				add_cache( path, response, result.expires );
+				}
+			
+			}
+		}
 	
 	return response;
 	}

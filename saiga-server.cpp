@@ -25,6 +25,27 @@
 #include "libHerd.hpp"
 
 
+response_options_t handler_index( HttpMessage& request, HttpMessage& response ){
+	response_options_t out;
+	std::string body;
+	body += "/*************************\\\n";
+	body += "|                         |\n";
+	body += "| Saiga Server            |\n";
+	body += "|     by Alshain Oy       |\n";
+	body += "|        version 0.0.3    |\n";
+	body += "|                --rime   |\n";
+	body += "\\*************************/\n";
+	
+	response.set_body( body );
+	response.set_code( 200 );
+	response.set_code_string( "Ok." );
+	response.set_header_field( "Content-Type", "text/plain" );
+	
+	out.ok = true;
+	out.cached = true;
+	out.expires = 60;
+	return out;
+	}
 
 
 
@@ -34,6 +55,7 @@ int main( int argc, char **argv ){
 	
 	signal(SIGPIPE, SIG_IGN);
 
+	RequestHandler::add_handler( "/index", &handler_index );
 
 	try{
 		herd.init( 8000 );

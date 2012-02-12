@@ -81,6 +81,13 @@ std::string string_to_lower( std::string str){
 	return out;
 	}
 
+bool string_startswith( std::string pattern, std::string str ){
+	std::string test;
+	if( str.size() < pattern.size() ){ return false; }
+	test = str.substr( 0, pattern.size() );
+	return test == pattern;
+	}
+
 
 // Reads file into buffer out, returns true if success
 bool read_file( std::string file, std::string& out ){
@@ -129,4 +136,20 @@ bool write_file( std::string file, std::string& out ){
 		}
 	
 	return true;
+	}
+	
+uint64_t fnv1a_hash( std::string& string ){
+	uint64_t out = 0xcbf29ce484222325;
+	size_t i;
+	for( i = 0 ; i < string.size() ; ++i ){
+		out ^= string[i];
+		out *= 0x100000001b3;
+		}
+	return out;
+	}
+
+double get_time(){
+	struct timeval tv;
+	gettimeofday( &tv, NULL );
+	return tv.tv_sec + tv.tv_usec * 1e-6;
 	}

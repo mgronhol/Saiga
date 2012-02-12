@@ -21,10 +21,33 @@
 #include <errno.h>
 #include <signal.h>
 
+#include <unordered_map>
+#include <limits>
+
 #include "libConnection.hpp"
 #include "libUtils.hpp"
 #include "libHttpMessage.hpp"
 #include "libCompression.hpp"
+
+
+typedef struct ResponseOptions {
+	bool ok;
+	bool cached;
+	double expires;
+	} response_options_t;
+
+typedef response_options_t (*handler_function)( HttpMessage&, HttpMessage& );
+
+class CachedEntry {
+	public:
+		CachedEntry();
+		CachedEntry( HttpMessage, double );
+		bool is_valid();
+		HttpMessage get_content();
+	private:
+		double expires;
+		HttpMessage content;
+	};
 
 class RequestHandler {
 	public:
@@ -32,7 +55,11 @@ class RequestHandler {
 		static void handleClient( int );
 		static HttpMessage handleRequest( HttpMessage& );
 		static bool running;
-		
+		static void add_handler( std::string, handler_function ); 
+		static void add_cache( std::string, HttpMessage, double );
+		static std::map< std::string, handler_function > handlers;
+		static std::unordered_map< uint64_t, CachedEntry > cache;
+
 	};
 
 

@@ -1,5 +1,5 @@
 CC = g++
-FLAGS = -O3 -Wall -Wextra -pedantic -g
+FLAGS = -O3 -Wall -Wextra -pedantic -g -std=c++0x
 
 LIBS = libcompression.o libconnection.o libhttpmessage.o libutils.o libhttpclient.o libbase64.o libherd.o -lz -pthread
 

@@ -204,7 +204,7 @@ std::string Connection :: receive( size_t len ){
 	if( n == 0 ){
 		//std::cerr << "Nothing to read" << std::endl;
 		throw std::string( "Nothing to read." );
-		return std::string();
+		//return std::string();
 		}
 	
 	out = std::string( buffer, n );

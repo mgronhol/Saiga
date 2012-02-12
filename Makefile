@@ -1,11 +1,11 @@
 CC = g++
 FLAGS = -O3 -Wall -Wextra -pedantic -g
 
-LIBS = libcompression.o libconnection.o libhttpmessage.o libutils.o libhttpclient.o libbase64.o -lz -pthread
+LIBS = libcompression.o libconnection.o libhttpmessage.o libutils.o libhttpclient.o libbase64.o libherd.o -lz -pthread
 
-all: main libcompression libconnection libhttpmessage libutils libhttpclient libbase64
+all: main libcompression libconnection libhttpmessage libutils libhttpclient libbase64 libherd
 
-main: libcompression libconnection libhttpclient libhttpmessage libutils libbase64
+main: libcompression libconnection libhttpclient libhttpmessage libutils libbase64 libherd
 	$(CC) $(FLAGS) saiga-client.cpp -o saiga-client $(LIBS)
 	$(CC) $(FLAGS) saiga-server.cpp -o saiga-server $(LIBS)
 
@@ -29,6 +29,9 @@ libhttpclient:
 
 libbase64:
 	$(CC) $(FLAGS) -c libBase64.cpp -o libbase64.o
+
+libherd:
+	$(CC) $(FLAGS) -c libHerd.cpp -o libherd.o
 
 #lauma: libcompression libconnection libhttpmessage libhttpclient libutils libbase64
 #	$(CC) $(FLAGS) libHerd.cpp -o lauma $(LIBS)

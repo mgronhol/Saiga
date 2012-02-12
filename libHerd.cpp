@@ -1,31 +1,6 @@
-#include <sys/socket.h>
-#include <sys/select.h>
-#include <stdio.h>
-#include <netinet/in.h>
-#include <arpa/inet.h>
-#include <time.h>
-#include <strings.h>
-
-#include <cstring>
-#include <string>
-#include <vector>
-#include <map>
-#include <set>
-#include <iterator>
-#include <deque>
-
-#include <pthread.h>
-#include <errno.h>
-#include <signal.h>
-
-#include "libConnection.hpp"
-#include "libUtils.hpp"
-#include "libHttpMessage.hpp"
-#include "libCompression.hpp"
+#include "libHerd.hpp"
 
 int global_connection_count = 0;
-
-//pthread_mutex_t conn_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 pthread_mutex_t queue_mutex = PTHREAD_MUTEX_INITIALIZER;
 pthread_cond_t	queue_cond   = PTHREAD_COND_INITIALIZER;
@@ -49,16 +24,7 @@ int queue_get(){
 	int out = -1;
 	
 	pthread_mutex_lock( &queue_mutex );
-	/*if( client_queue.size() > 0 ){
-		out = client_queue.front();
-		client_queue.pop_front();
-		}
-	else{
-		pthread_cond_wait( &queue_cond, &queue_mutex );
-		out = client_queue.front();
-		client_queue.pop_front();
-		}
-	*/
+
 	while( client_queue.size() == 0 ){
 		pthread_cond_wait( &queue_cond, &queue_mutex );
 		}
@@ -73,52 +39,7 @@ int queue_get(){
 
 
 
-/*
-int gconn[35];
 
-void print_conns(){
-	pthread_mutex_lock( &conn_mutex );
-	for( size_t i = 0 ; i < 35 ; ++i ){
-		if( gconn[i] > 0 ){
-			//printf( "%02i ", gconn[i] );
-			printf( "* " );
-			}
-		else{
-			//printf( "   " ); 
-			printf( "  " );
-			}
-		}
-	printf( "\n" );
-	pthread_mutex_unlock( &conn_mutex );
-	}
-
-void gconn_mark( int i ){
-	pthread_mutex_lock( &conn_mutex );
-	gconn[i] += 1;
-	pthread_mutex_unlock( &conn_mutex );
-	}
-
-void gconn_unmark( int i ){
-	pthread_mutex_lock( &conn_mutex );
-	gconn[i] -= 1;
-	pthread_mutex_unlock( &conn_mutex );
-	}
-
-void gconn_init(){
-	for( size_t i = 0 ; i< 35 ; ++i ){
-		gconn[i] = 0;
-		}
-	}
-*/
-
-
-class RequestHandler {
-	public:
-		static void* workerThread( void * );
-		static void handleClient( int );
-		static HttpMessage handleRequest( HttpMessage& );
-		static bool running;
-	};
 
 bool RequestHandler :: running = true;
 
@@ -144,7 +65,6 @@ void RequestHandler :: handleClient( int fd ){
 	std::vector< std::string > parts;
 	std::string body;
 	
-	//printf( "RequestHandler::handleClient( %i )\n", *ptr_fd );	
 	
 	bool done = false;
 	
@@ -343,30 +263,6 @@ HttpMessage RequestHandler :: handleRequest( HttpMessage& request ){
 
 
 
-class ThreadHerd {
-	public:
-		ThreadHerd();
-		
-		bool init( size_t );
-		
-		void start();
-		
-		void run();
-		
-		void stop();
-	
-		static void *_bootstap_thread( void* );
-		
-	private:
-		int master_socket;
-		bool connected, running;
-		size_t port;
-		
-		pthread_t worker;
-		
-		std::vector< pthread_t > handler_threads;
-		
-	};
 
 ThreadHerd :: ThreadHerd(){
 	connected = false;
@@ -518,6 +414,7 @@ void ThreadHerd :: stop(){
 	}
 
 
+/*
 int main(){
 	
 	ThreadHerd herd;
@@ -538,3 +435,4 @@ int main(){
 			}
 	return 0;
 	}
+*/

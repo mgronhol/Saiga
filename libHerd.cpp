@@ -57,8 +57,13 @@ HttpMessage CachedEntry :: get_content(){ return content; }
 std::map< std::string, handler_function > RequestHandler :: handlers;
 std::unordered_map< uint64_t, CachedEntry > RequestHandler :: cache;
 
+pthread_rwlock_t RequestHandler :: cache_lock;
 
 bool RequestHandler :: running = true;
+
+void RequestHandler :: init(){
+	pthread_rwlock_init( &cache_lock, NULL );
+	}
 
 void RequestHandler :: add_handler( std::string pattern, handler_function func ){
 	handlers[ pattern ] = func;
@@ -66,7 +71,9 @@ void RequestHandler :: add_handler( std::string pattern, handler_function func )
 
 void RequestHandler :: add_cache( std::string path, HttpMessage msg, double expires ){
 	uint64_t key = fnv1a_hash( path );
+	pthread_rwlock_wrlock( &cache_lock );
 	cache[ key ] = CachedEntry( msg, expires );
+	pthread_rwlock_unlock( &cache_lock );
 	}
 		
 
@@ -105,7 +112,7 @@ void RequestHandler :: handleClient( int fd ){
 				content += conn.receive( 1024 );
 				}
 			} catch( std::string error ){
-				std::cerr << "RH: ERROR: " << error << std::endl;
+				//std::cerr << "RH: ERROR: " << error << std::endl;
 				done = true;
 				continue;
 				}
@@ -178,7 +185,7 @@ void RequestHandler :: handleClient( int fd ){
 								content += conn.receive( chunk_size - content.size() + 2 );
 								}
 							} catch( std::string error ){
-								std::cerr << "RH: ERROR: " << error << std::endl;
+								//std::cerr << "RH: ERROR: " << error << std::endl;
 								 
 								done = true;
 								continue;
@@ -191,7 +198,7 @@ void RequestHandler :: handleClient( int fd ){
 								content += conn.receive( 1 );
 								}
 							} catch( std::string error ){
-								std::cerr << "RH: ERROR:" << error << std::endl;
+								//std::cerr << "RH: ERROR:" << error << std::endl;
 								done = true;
 								break;
 								}
@@ -222,7 +229,7 @@ void RequestHandler :: handleClient( int fd ){
 			
 			conn.send( response.serialize() );
 			} catch( std::string error ){
-				std::cerr << "RH: ERROR: " << error << std::endl;
+				//std::cerr << "RH: ERROR: " << error << std::endl;
 				}
 		
 		done = true;
@@ -257,15 +264,19 @@ HttpMessage RequestHandler :: handleRequest( HttpMessage& request ){
 	response.set_version( "HTTP/1.1" );
 	response.set_header_field( "Server", "Saiga Node 0.0.2" );
 	response.set_header_field( "Content-Type", "text/html" );
+	response.set_header_field( "Date", get_gmt_time(0) );
 	
 	cache_key = fnv1a_hash( path );
+	
+	pthread_rwlock_rdlock( &RequestHandler::cache_lock );
 	cache_it = cache.find( cache_key );
 	if( cache_it != cache.end() ){
 		if( (cache_it->second).is_valid() ){
+			pthread_rwlock_unlock( &RequestHandler::cache_lock );
 			return (cache_it->second).get_content();
 			}
 		}
-	
+	pthread_rwlock_unlock( &RequestHandler::cache_lock );
 					
 	for( std::map< std::string, handler_function >::iterator it = handlers.begin() ; it != handlers.end() ; it++ ){
 		if( string_startswith( it->first, path ) ){
@@ -341,8 +352,9 @@ bool ThreadHerd :: init( size_t aport ){
 	struct sockaddr_in6	server_addr;
 	int fd, n, yes = 1;
 	
-	port = aport;
+	RequestHandler::init();
 	
+	port = aport;
 	
 	fd = socket( AF_INET6, SOCK_STREAM, 0 );
 	

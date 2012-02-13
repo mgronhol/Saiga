@@ -59,7 +59,8 @@ class RequestHandler {
 		static void add_cache( std::string, HttpMessage, double );
 		static std::map< std::string, handler_function > handlers;
 		static std::unordered_map< uint64_t, CachedEntry > cache;
-
+		static pthread_rwlock_t cache_lock;
+		static void init();
 	};
 
 

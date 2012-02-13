@@ -139,8 +139,8 @@ std::string zlib_gzip_deflate( std::string content ){
 		str_chunk.clear();
 		
 		if( content.size() - pos > CHUNK ){
-			str_chunk = content.substr( pos, pos + CHUNK );
-			pos += CHUNK;
+			str_chunk = content.substr( pos, CHUNK - 1 );
+			pos += CHUNK-1;
 			flush = Z_NO_FLUSH;
 			}
 		else {

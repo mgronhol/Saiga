@@ -254,7 +254,7 @@ void RequestHandler :: handleClient( int fd ){
 
 HttpMessage RequestHandler :: handleRequest( HttpMessage& request ){
 	HttpMessage response;
-	std::string body, path;
+	std::string body, path, ckey;
 	handler_function func = NULL;
 	size_t pattern_length = 0;
 	uint64_t cache_key;
@@ -266,7 +266,8 @@ HttpMessage RequestHandler :: handleRequest( HttpMessage& request ){
 	response.set_header_field( "Content-Type", "text/html" );
 	response.set_header_field( "Date", get_gmt_time(0) );
 	
-	cache_key = fnv1a_hash( path );
+	ckey = request.get_method() + ":" + path;
+	cache_key = fnv1a_hash( ckey );
 	
 	pthread_rwlock_rdlock( &RequestHandler::cache_lock );
 	cache_it = cache.find( cache_key );
@@ -326,7 +327,7 @@ HttpMessage RequestHandler :: handleRequest( HttpMessage& request ){
 				}
 			
 			if( result.cached ){
-				add_cache( path, response, result.expires );
+				add_cache( request.get_method() + ":" + path, response, result.expires );
 				}
 			
 			}

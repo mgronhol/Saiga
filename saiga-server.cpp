@@ -28,6 +28,12 @@
 response_options_t handler_index( HttpMessage& request, HttpMessage& response ){
 	response_options_t out;
 	std::string body;
+	
+	if( request.get_path() != "/index" ){
+		out.ok = false;
+		return out;
+		}
+	
 	body += "/*************************\\\n";
 	body += "|                         |\n";
 	body += "| Saiga Server            |\n";

@@ -3,12 +3,24 @@
 import socket, sys, os
 import struct
 
+class SaigaMessage( object ):
+	def __init__( self, sock = None, values = {} ):
+		self.sock = sock
+		self.values = values
+	
+	def set( self, key, value ):
+		self.values[key] = value
+	
+	def get( self, key ):
+		return self.values[key]
+	
+	
 
 class SaigaConnector( object ):
 	def __init__( self, path ):
 		self.path = path
 		self.sock = None
-		self.conn = None
+		#self.conn = None
 	
 	def start( self ):
 		self.sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
@@ -21,17 +33,17 @@ class SaigaConnector( object ):
 		self.sock.listen( 255 )
 	
 	def get_message( self ):
-		self.conn, addr = self.sock.accept()
+		conn, addr = self.sock.accept()
 		out = {}
 		msg_len = ""
 		lenSize = struct.calcsize( "Q" )
 		while len(msg_len) < lenSize:
-			msg_len += self.conn.recv( 1 )
+			msg_len += conn.recv( 1 )
 		
 		length = struct.unpack( "Q", msg_len )[0]
 		content = ""
 		while len(content) < length:
-			content += self.conn.recv( length - len( content ) )
+			content += conn.recv( length - len( content ) )
 		
 		pos = 0
 		while pos < length:
@@ -47,11 +59,11 @@ class SaigaConnector( object ):
 			value = content[pos:pos+strlen]
 			pos += strlen
 			out[key] = value
-		return out
+		return SaigaMessage( conn, out ), SaigaMessage( conn, {} )
 
 	def send_message( self, msg ):
 		out = ""
-		for (key,value) in msg.items():
+		for (key,value) in msg.values.items():
 			lkey = struct.pack( "Q", len( key ) )
 			lvalue = struct.pack( "Q", len( value ) )
 			out += lkey + key + lvalue + value
@@ -59,14 +71,13 @@ class SaigaConnector( object ):
 		
 		L = 0
 		while L < len( out ):
-			n = self.conn.send( out[L:] )
+			n = msg.sock.send( out[L:] )
 			if n > 0:
 				L += n
 			else:
 				break
-		self.conn.close()
-		self.conn = None
-
+		msg.sock.close()
+		
 	def disconnect( self ):
 		self.sock.close()
 

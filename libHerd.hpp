@@ -52,6 +52,8 @@ class CachedEntry {
 class RequestHandler {
 	public:
 		static void* workerThread( void * );
+		static void* cleanerThread( void * );
+		
 		static void handleClient( int );
 		static HttpMessage handleRequest( HttpMessage& );
 		static bool running;
@@ -84,7 +86,7 @@ class ThreadHerd {
 		bool connected, running;
 		size_t port;
 		
-		pthread_t worker;
+		pthread_t worker, cleaner;
 		
 		std::vector< pthread_t > handler_threads;
 		

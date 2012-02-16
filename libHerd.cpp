@@ -90,6 +90,37 @@ void* RequestHandler :: workerThread( void *arg ){
 	pthread_exit( arg );
 	}
 
+void* RequestHandler :: cleanerThread( void *arg ){
+	double t0 = get_time() + 5.0;
+	while( RequestHandler::running ){
+		if( get_time() < t0 ){
+			pthread_yield();
+			}
+		else{
+			//std::cerr << "Zoink from cleanerThread" << std::endl;
+			std::unordered_map< uint64_t, CachedEntry >::iterator it;
+			//for( it = cache.begin() ; it != cache.end(); 
+			it = cache.begin();
+			while( it != cache.end() ){
+				if( !(it->second).is_valid() ){
+					pthread_rwlock_wrlock( &cache_lock );
+					if( !(it->second).is_valid() ){
+						cache.erase( it );
+						//std::cerr << "Cleared cache entry..." << std::endl;
+						}
+					pthread_rwlock_unlock( &cache_lock );
+					it = cache.begin();
+					}
+				
+				}
+			
+			t0 = get_time() + 5.0;
+			}
+		
+		}
+	pthread_exit( arg );
+	}
+
 
 void RequestHandler :: handleClient( int fd ){
 	Connection conn( fd );
@@ -101,6 +132,8 @@ void RequestHandler :: handleClient( int fd ){
 	
 	
 	bool done = false;
+	
+	size_t request_counter = 0;
 	
 	conn.set_timeout( 15 );
 	
@@ -238,6 +271,10 @@ void RequestHandler :: handleClient( int fd ){
 				( request.get_header_field( "Connection" ) == "keep-alive" ) ){
 				done = false;
 				}
+			}
+		++request_counter;
+		if( request_counter > 15 ){
+			done = true;
 			}	
 		}
 	
@@ -424,6 +461,12 @@ void ThreadHerd :: start(){
 		rc = pthread_create( &worker, &attr, &ThreadHerd::_bootstap_thread, this );
 		if( rc != 0 ){
 			throw std::string( "Unable to start worker thread." );
+			}
+		
+		
+		rc = pthread_create( &cleaner, &attr, &RequestHandler::cleanerThread, NULL );
+		if( rc != 0 ){
+			throw std::string( "Unable to start cleaner thread." );
 			}
 			
 		pthread_attr_destroy(&attr);

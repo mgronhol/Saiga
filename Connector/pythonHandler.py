@@ -4,7 +4,7 @@ import libSaigaConnector as libSaiga
 
 import libHtml as HTML
 
-import threading
+import threading, time
 
 class HandlerThread( threading.Thread ):
 	def __init__( self, conn, msg, response, handler ):
@@ -22,7 +22,7 @@ class HandlerThread( threading.Thread ):
 def default_page( msg, response ):
 	global counter
 	response.set( "status", "ok" )
-	response.set( "cache", "10" ) # 10 ms cache time
+	response.set( "cache", "5000" ) # 10 ms cache time
 	
 	doc = HTML.HtmlDocument()
 	with doc.html:
@@ -46,6 +46,7 @@ counter = 0
 try:
 	while True:
 		msg, response = conn.get_message()
+		print "[%s] It's a hit!"%( time.strftime( "%H:%M:%S" ) )
 		#conn.send_message( response )
 		thread = HandlerThread( conn, msg, response, default_page )
 		thread.setDaemon( True )

@@ -300,7 +300,14 @@ HttpMessage RequestHandler :: handleRequest( HttpMessage& request ){
 		response.set_body( "Error 404 - Not found!\n" );
 		}
 	else{
-		response_options_t result = func( request, response );
+		response_options_t result;
+		try{
+			result = func( request, response );
+			} catch( std::string error ){
+				response.set_code( 500 );
+				response.set_code_string( "Internal server error." );
+				
+				}
 		if( !result.ok ){
 			response.set_code( 404 );
 			response.set_code_string( "Not found." );

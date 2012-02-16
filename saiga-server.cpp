@@ -23,7 +23,7 @@
 #include "libHttpMessage.hpp"
 #include "libCompression.hpp"
 #include "libHerd.hpp"
-
+#include "libSaigaConnector.hpp"
 
 response_options_t handler_index( HttpMessage& request, HttpMessage& response ){
 	response_options_t out;
@@ -82,6 +82,41 @@ response_options_t handler_static_files( HttpMessage& request, HttpMessage& resp
 	return out;
 	}
 
+response_options_t handler_connector( HttpMessage& request, HttpMessage& response ){
+	response_options_t out;
+	ConnectorMessage msg;
+	SaigaConnector connector( "/tmp/default.saiga" );
+	uint64_t cache_msecs;
+	
+	bool connected = connector.start();
+	if( !connected ){
+		throw std::string( "No one to connect to!" );
+		}
+	
+	msg = connector.process( request );
+	
+	if( msg.get( "status") != "ok" ){
+		out.ok = false;
+		return out;
+		}
+	
+	response.set_body( msg.get( "body" ) );
+	response.set_code( string_to_integer( msg.get( "code" ) ) );
+	response.set_code_string( "Ok." );
+	out.ok = true;
+	cache_msecs = string_to_integer( msg.get( "cache" ) );
+	if( cache_msecs == 0 ){
+		out.cached = false;
+		}
+	else{
+		out.cached = true;
+		out.expires = cache_msecs / 1000.0;
+		}
+	
+	return out;
+	}
+
+
 int main( int argc, char **argv ){
 
 	ThreadHerd herd;
@@ -90,6 +125,7 @@ int main( int argc, char **argv ){
 
 	RequestHandler::add_handler( "/index", &handler_index );
 	RequestHandler::add_handler( "/static/", &handler_static_files );
+	RequestHandler::add_handler( "/api/", &handler_connector );
 
 	try{
 		herd.init( 8000 );

@@ -61,6 +61,11 @@ pthread_rwlock_t RequestHandler :: cache_lock;
 
 bool RequestHandler :: running = true;
 
+uint64_t RequestHandler :: compute_hash( HttpMessage& request ){
+	std::string ckey = request.get_method() + ":" + request.get_path();
+	return fnv1a_hash( ckey );
+	}
+
 void RequestHandler :: init(){
 	pthread_rwlock_init( &cache_lock, NULL );
 	}
@@ -69,8 +74,7 @@ void RequestHandler :: add_handler( std::string pattern, handler_function func )
 	handlers[ pattern ] = func;
 	}
 
-void RequestHandler :: add_cache( std::string path, HttpMessage msg, double expires ){
-	uint64_t key = fnv1a_hash( path );
+void RequestHandler :: add_cache( uint64_t key, HttpMessage msg, double expires ){
 	pthread_rwlock_wrlock( &cache_lock );
 	cache[ key ] = CachedEntry( msg, expires );
 	pthread_rwlock_unlock( &cache_lock );
@@ -303,14 +307,18 @@ HttpMessage RequestHandler :: handleRequest( HttpMessage& request ){
 	response.set_header_field( "Content-Type", "text/html" );
 	response.set_header_field( "Date", get_gmt_time(0) );
 	
+	/*
 	ckey = request.get_method() + ":" + path;
 	cache_key = fnv1a_hash( ckey );
+	*/
+	cache_key = compute_hash( request );
 	
 	pthread_rwlock_rdlock( &RequestHandler::cache_lock );
 	cache_it = cache.find( cache_key );
 	if( cache_it != cache.end() ){
 		if( (cache_it->second).is_valid() ){
 			pthread_rwlock_unlock( &RequestHandler::cache_lock );
+			//std::cerr << "Found @ cache" << std::endl;
 			return (cache_it->second).get_content();
 			}
 		}
@@ -371,7 +379,7 @@ HttpMessage RequestHandler :: handleRequest( HttpMessage& request ){
 				}
 			
 			if( result.cached ){
-				add_cache( request.get_method() + ":" + path, response, result.expires );
+				add_cache( cache_key, response, result.expires );
 				}
 			
 			}

@@ -2,6 +2,8 @@
 
 int global_connection_count = 0;
 
+const std::string SERVER_VERSION = "Saiga Server 0.0.3";
+
 pthread_mutex_t queue_mutex = PTHREAD_MUTEX_INITIALIZER;
 pthread_cond_t	queue_cond   = PTHREAD_COND_INITIALIZER;
 
@@ -303,7 +305,7 @@ HttpMessage RequestHandler :: handleRequest( HttpMessage& request ){
 	
 	path = request.get_path();
 	response.set_version( "HTTP/1.1" );
-	response.set_header_field( "Server", "Saiga Node 0.0.2" );
+	response.set_header_field( "Server", SERVER_VERSION );
 	response.set_header_field( "Content-Type", "text/html" );
 	response.set_header_field( "Date", get_gmt_time(0) );
 	
@@ -339,7 +341,7 @@ HttpMessage RequestHandler :: handleRequest( HttpMessage& request ){
 		response.set_version( "HTTP/1.1" );
 		response.set_header_field( "Connection", "close" );
 		response.set_header_field( "Date", get_gmt_time(0) );
-		response.set_header_field( "Server", "Saiga Node 0.0.2" );
+		response.set_header_field( "Server", SERVER_VERSION );
 		response.set_header_field( "Last-Modified", get_gmt_time(0) );
 		response.set_header_field( "Content-Type", "text/plain" );
 		response.set_body( "Error 404 - Not found!\n" );
@@ -359,7 +361,7 @@ HttpMessage RequestHandler :: handleRequest( HttpMessage& request ){
 			response.set_version( "HTTP/1.1" );
 			response.set_header_field( "Connection", "close" );
 			response.set_header_field( "Date", get_gmt_time(0) );
-			response.set_header_field( "Server", "Saiga Node 0.0.2" );
+			response.set_header_field( "Server", SERVER_VERSION );
 			response.set_header_field( "Last-Modified", get_gmt_time(0) );
 			response.set_header_field( "Content-Type", "text/plain" );
 			response.set_body( "Error 404 - Not found!\n" );

@@ -4,8 +4,8 @@ int global_connection_count = 0;
 
 const std::string SERVER_VERSION = "Saiga Server 0.0.3";
 
-pthread_mutex_t queue_mutex = PTHREAD_MUTEX_INITIALIZER;
-pthread_cond_t	queue_cond   = PTHREAD_COND_INITIALIZER;
+pthread_mutex_t queue_mutex 	= PTHREAD_MUTEX_INITIALIZER;
+pthread_cond_t	queue_cond   	= PTHREAD_COND_INITIALIZER;
 
 
 std::deque< int > client_queue;
@@ -62,10 +62,20 @@ std::unordered_map< uint64_t, CachedEntry > RequestHandler :: cache;
 pthread_rwlock_t RequestHandler :: cache_lock;
 
 bool RequestHandler :: running = true;
+hasher_function RequestHandler :: cache_hash_function = NULL;
+
+void RequestHandler :: set_hash_function( hasher_function func ){
+	cache_hash_function = func;
+	}
 
 uint64_t RequestHandler :: compute_hash( HttpMessage& request ){
-	std::string ckey = request.get_method() + ":" + request.get_path();
-	return fnv1a_hash( ckey );
+	if( cache_hash_function != NULL ){
+		return cache_hash_function( request );
+		}
+	else{
+		std::string ckey = request.get_method() + ":" + request.get_path();
+		return fnv1a_hash( ckey );
+		}
 	}
 
 void RequestHandler :: init(){

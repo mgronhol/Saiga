@@ -37,6 +37,7 @@ typedef struct ResponseOptions {
 	} response_options_t;
 
 typedef response_options_t (*handler_function)( HttpMessage&, HttpMessage& );
+typedef uint64_t (*hasher_function)( HttpMessage& );
 
 class CachedEntry {
 	public:
@@ -65,6 +66,9 @@ class RequestHandler {
 		static std::unordered_map< uint64_t, CachedEntry > cache;
 		static pthread_rwlock_t cache_lock;
 		static void init();
+		static void set_hash_function( hasher_function );
+		static hasher_function cache_hash_function;
+		
 	};
 
 

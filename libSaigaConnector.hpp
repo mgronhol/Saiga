@@ -35,7 +35,7 @@ class ConnectorMessage {
 		ConnectorMessage();
 		void set( std::string, std::string );
 		std::string get( std::string );
-		
+		std::vector< std::string > get_keys();
 		std::string serialize();
 	
 		static std::string to_pstr( std::string );

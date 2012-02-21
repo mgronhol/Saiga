@@ -42,6 +42,17 @@ std::string ConnectorMessage :: get( std::string key ){
 	return std::string();
 	}
 
+std::vector< std::string > ConnectorMessage :: get_keys(){
+	std::map< std::string, std::string >::iterator it;
+	std::vector< std::string > out;
+	for( it = content.begin() ; it != content.end() ; it++ ){
+		out.push_back( it->first );
+		} 
+	return out;
+	}
+
+
+
 std::string ConnectorMessage :: serialize(){
 	std::string out;
 	for( std::map< std::string, std::string >::iterator it = content.begin() ; it != content.end() ; it++ ){

@@ -44,4 +44,6 @@ bool write_file( std::string file, std::string& out );
 uint64_t fnv1a_hash( std::string& string );
 double get_time();
 
+std::string get_mime_type( std::string& path );
+
 #endif

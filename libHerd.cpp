@@ -108,9 +108,12 @@ void* RequestHandler :: workerThread( void *arg ){
 
 void* RequestHandler :: cleanerThread( void *arg ){
 	double t0 = get_time() + 5.0;
+	struct timespec tm, tmp;
 	while( RequestHandler::running ){
 		if( get_time() < t0 ){
-			pthread_yield();
+			//pthread_yield();
+			tm.tv_sec = 1;
+			nanosleep( &tm, &tmp );
 			}
 		else{
 			//std::cerr << "Zoink from cleanerThread" << std::endl;

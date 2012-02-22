@@ -153,3 +153,60 @@ double get_time(){
 	gettimeofday( &tv, NULL );
 	return tv.tv_sec + tv.tv_usec * 1e-6;
 	}
+
+
+std::string get_mime_type( std::string& path ){
+	std::string type;
+	size_t pos = path.find_last_of( "." );
+	if( pos == std::string::npos ){
+		return std::string( "application/octet-stream" );
+		}
+	type = path.substr( pos + 1 );
+	type = string_to_lower( type );
+	
+	if( type == "txt" ){
+		return std::string( "text/plain" );
+		}
+	
+	if( type == "html" ){
+		return std::string( "text/html" );
+		}
+	
+	if( type == "png" ){
+		return std::string( "image/png" );
+		}
+	
+	if( type == "jpg" || type == "jpeg" ){
+		return std::string( "image/jpeg" );
+		}
+	
+	if( type == "pdf" ){
+		return std::string( "application/pdf" );
+		}
+	
+	if( type == "gz" ){
+		return std::string( "application/x-gzip" );
+		}
+	
+	if( type == "svg" ){
+		return std::string( "image/svg+xml" );
+		}
+	
+	if( type == "css" ){
+		return std::string( "text/css" );
+		}
+	
+	if( type == "js" ){
+		return std::string( "application/javascript" );
+		}
+	
+	if( type == "xml" ){
+		return std::string( "text/xml" );
+		}
+	
+	if( type == "tar" ){
+		return std::string( "application/x-tar" );
+		}
+		
+	return std::string( "text/plain");
+	}

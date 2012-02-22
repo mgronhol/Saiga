@@ -66,6 +66,7 @@ response_options_t handler_static_files( HttpMessage& request, HttpMessage& resp
 			}
 		}
 	std::cout << "file_path: '" << file_path << "'" << std::endl;
+	std::cout << "file type: " << get_mime_type( file_path ) << std::endl;
 	file_exists = read_file( file_path, body );
 	if( file_exists ){
 		out.ok = true;
@@ -74,7 +75,7 @@ response_options_t handler_static_files( HttpMessage& request, HttpMessage& resp
 		response.set_body( body );
 		response.set_code( 200 );
 		response.set_code_string( "Ok." );
-		response.set_header_field( "Content-Type", "text/plain" );
+		response.set_header_field( "Content-Type", get_mime_type( file_path ) );
 		return out;
 		}
 	
